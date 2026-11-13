@@ -1,0 +1,27 @@
+{
+  "name": "pvt",
+  "version": "1.0.0",
+  "description": "a game app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/balikis123951/pvt.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/balikis123951/pvt/issues"
+  },
+  "homepage": "https://github.com/balikis123951/pvt#readme",
+  "dependencies": {
+    "express": "^5.3.0",
+    "socket.io": "^4.8.4",
+    "three": "^0.187.0"
+  }
+}

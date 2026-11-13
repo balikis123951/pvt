@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="300" viewBox="0 0 640 300">
+    <rect width="640" height="300" fill="#101811"/>
+    <path d="M0 250 L640 100 M0 290 L640 140" stroke="#263729" stroke-width="2"/>
+    <rect x="18" y="18" width="604" height="264" fill="none" stroke="#384b38" stroke-width="2"/>
+    <text x="320" y="150" text-anchor="middle" font-size="100" font-family="Arial,sans-serif">🗡️</text>
+    <text x="320" y="235" text-anchor="middle" font-size="24" font-family="Arial,sans-serif" font-weight="bold" fill="#c8ff62" letter-spacing="3">COMBAT KNIFE</text>
+    </svg>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090c0b">
+    <title>PVT | Tactical Operations</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- LOADING SCREEN -->
+    <section id="loading-screen" class="screen loading-screen">
+        <div class="loading-background"></div>
+        <div class="loading-overlay"></div>
+
+        <header class="loading-header">
+            <div class="brand">PVT<span>.</span></div>
+            <div class="classified">TACTICAL OPERATIONS DIVISION</div>
+        </header>
+
+        <div class="loading-content">
+            <p class="eyebrow">PREPARE FOR DEPLOYMENT</p>
+            <h1>THE BATTLEFIELD<br>AWAITS<span>.</span></h1>
+            <p class="loading-description">
+                Prepare your equipment. Choose your operator.
+                Survive the mission.
+            </p>
+
+            <div class="loading-status">
+                <span id="loading-message">INITIALIZING SYSTEMS</span>
+                <span id="loading-percentage">0%</span>
+            </div>
+
+            <div class="progress-track">
+                <div id="loading-progress" class="progress-fill"></div>
+            </div>
+
+            <p class="loading-footer">PVT // ALL SYSTEMS CHECKING</p>
+        </div>
+
+        <div class="corner-label">PVT / 001</div>
+    </section>
+
+    <!-- UPGRADE SCREEN -->
+    <section id="upgrade-screen" class="screen upgrade-screen hidden">
+        <header class="topbar">
+            <div class="brand">PVT<span>.</span></div>
+            <div class="topbar-label">OPERATOR DEVELOPMENT</div>
+            <div class="player-level">LEVEL <span id="player-level">01</span></div>
+        </header>
+
+        <main class="upgrade-container">
+            <div class="section-heading">
+                <p class="eyebrow">YOUR JOURNEY STARTS HERE</p>
+                <h1>OPERATOR <span>PROGRESSION</span></h1>
+                <p>Develop your skills. Prepare for the battlefield.</p>
+            </div>
+
+            <section class="player-progress panel">
+                <div class="progress-info">
+                    <div>
+                        <p class="muted-label">CURRENT RANK</p>
+                        <h2>ROOKIE OPERATOR</h2>
+                    </div>
+
+                    <div class="xp-display">
+                        <strong id="xp-value">0 XP</strong>
+                        <span>/ 100 XP</span>
+                    </div>
+                </div>
+
+                <div class="progress-track xp-track">
+                    <div id="xp-progress" class="progress-fill"></div>
+                </div>
+
+                <p class="progress-hint">
+                    Earn experience by completing missions and surviving matches.
+                </p>
+            </section>
+
+            <div class="upgrade-heading">
+                <h2>AVAILABLE UPGRADES</h2>
+                <span>SELECT YOUR PATH</span>
+            </div>
+
+            <section class="upgrade-grid">
+
+                <article class="upgrade-card panel">
+                    <div class="upgrade-icon">01</div>
+                    <div class="upgrade-details">
+                        <p class="card-category">WEAPON SYSTEM</p>
+                        <h3>ARSENAL</h3>
+                        <p>Explore weapons and improve your combat loadout.</p>
+                    </div>
+                    <span class="status-tag available">AVAILABLE SOON</span>
+                </article>
+
+                <article class="upgrade-card panel">
+                    <div class="upgrade-icon">02</div>
+                    <div class="upgrade-details">
+                        <p class="card-category">OPERATOR PROGRAM</p>
+                        <h3>NEW OPERATORS</h3>
+                        <p>Work toward unlocking additional operators and skins.</p>
+                    </div>
+                    <span class="status-tag locked">LOCKED</span>
+                </article>
+
+                <article class="upgrade-card panel">
+                    <div class="upgrade-icon">03</div>
+                    <div class="upgrade-details">
+                        <p class="card-category">FIELD EQUIPMENT</p>
+                        <h3>TACTICAL GEAR</h3>
+                        <p>Prepare equipment for your next deployment.</p>
+                    </div>
+                    <span class="status-tag locked">LOCKED</span>
+                </article>
+
+            </section>
+
+            <div class="upgrade-actions">
+                <p>YOUR OPERATION BEGINS NOW.</p>
+                <button id="continue-button" class="primary-button">
+                    ENTER COMMAND CENTER <span>→</span>
+                </button>
+            </div>
+        </main>
+
+        <footer class="page-footer">
+            <span>PVT // TACTICAL OPERATIONS</span>
+            <span>TRAIN • PREPARE • DEPLOY</span>
+        </
+    <script src="/js/main.js"></script>
+</body>
+</html>

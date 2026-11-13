@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090c0b">
+    <title>PVT | Tactical Operations</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- LOADING SCREEN -->
+    <section id="loading-screen" class="screen loading-screen">
+        <div class="loading-background"></div>
+        <div class="loading-overlay"></div>
+
+        <header class="loading-header">
+            <div class="brand">PVT<span>.</span></div>
+            <div class="classified">TACTICAL OPERATIONS DIVISION</div>
+        </header>
+
+        <div class="loading-content">
+            <p class="eyebrow">PREPARE FOR DEPLOYMENT</p>
+            <h1>THE BATTLEFIELD<br>AWAITS<span>.</span></h1>
+            <p class="loading-description">
+                Prepare your equipment. Choose your operator.
+                Survive the mission.
+            </p>
+
+            <div class="loading-status">
+                <span id="loading-message">INITIALIZING SYSTEMS</span>
+                <span id="loading-percentage">0%</span>
+            </div>
+
+            <div class="progress-track">
+                <div id="loading-progress" class="progress-fill"></div>
+            </div>
+
+            <p class="loading-footer">PVT // ALL SYSTEMS CHECKING</p>
+        </div>
+
+        <div class="corner-label">PVT / 001</div>
+    </section>
+
+    <!-- UPGRADE SCREEN -->
+    <section id="upgrade-screen" class="screen upgrade-screen hidden">
+        <header class="topbar">
+            <div class="brand">PVT<span>.</span></div>
+            <div class="topbar-label">OPERATOR DEVELOPMENT</div>
+            <div class="player-level">LEVEL <span id="player-level">01</span></div>
+        </header>
+
+        <main class="upgrade-container">
+            <div class="section-heading">
+                <p class="eyebrow">YOUR JOURNEY STARTS HERE</p>
+                <h1>OPERATOR <span>PROGRESSION</span></h1>
+                <p>Develop your skills. Prepare for the battlefield.</p>
+            </div>
+
+            <section class="player-progress panel">
+                <div class="progress-info">
+                    <div>
+                        <p class="muted-label">CURRENT RANK</p>
+                        <h2>ROOKIE OPERATOR</h2>
+                    </div>
+
+                    <div class="xp-display">
+                        <strong id="xp-value">0 XP</strong>
+                        <span>/ 100 XP</span>
+                    </div>
+                </div>
+
+                <div class="progress-track xp-track">
+                    <div id="xp-progress" class="progress-fill"></div>
+                </div>
+
+                <p class="progress-hint">
+                    Earn experience by completing missions and surviving matches.
+                </p>
+            </section>
+
+            <div class="upgrade-heading">
+                <h2>AVAILABLE UPGRADES</h2>
+                <span>SELECT YOUR PATH</span>
+            </div>
+
+            <section class="upgrade-grid">
+
+                <article class="upgrade-card panel">
+                    <div class="upgrade-icon">01</div>
+                    <div class="upgrade-details">
+                        <p class="card-category">WEAPON SYSTEM</p>
+                        <h3>ARSENAL</h3>
+                        <p>Explore weapons and improve your combat loadout.</p>
+                    </div>
+                    <span class="status-tag available">AVAILABLE SOON</span>
+                </article>
+
+                <article class="upgrade-card panel">
+                    <div class="upgrade-icon">02</div>
+                    <div class="upgrade-details">
+                        <p class="card-category">OPERATOR PROGRAM</p>
+                        <h3>NEW OPERATORS</h3>
+                        <p>Work toward unlocking additional operators and skins.</p>
+                    </div>
+                    <span class="status-tag locked">LOCKED</span>
+                </article>
+
+                <article class="upgrade-card panel">
+                    <div class="upgrade-icon">03</div>
+                    <div class="upgrade-details">
+                        <p class="card-category">FIELD EQUIPMENT</p>
+                        <h3>TACTICAL GEAR</h3>
+                        <p>Prepare equipment for your next deployment.</p>
+                    </div>
+                    <span class="status-tag locked">LOCKED</span>
+                </article>
+
+            </section>
+
+            <div class="upgrade-actions">
+                <p>YOUR OPERATION BEGINS NOW.</p>
+                <button id="continue-button" class="primary-button">
+                    ENTER COMMAND CENTER <span>→</span>
+                </button>
+            </div>
+        </main>
+
+        <footer class="page-footer">
+            <span>PVT // TACTICAL OPERATIONS</span>
+            <span>TRAIN • PREPARE • DEPLOY</span>
+        </footer>
+<div class="upgrade-loading">
+    <div class="upgrade-loading-info">
+        <span id="upgrade-loading-message">PREPARING YOUR OPERATION</span>
+        <span><span id="upgrade-countdown">10</span>s</span>
+    </div>
+
+    <div class="progress-track">
+        <div id="upgrade-loading-progress" class="progress-fill"></div>
+    </div>
+
+    <p>ENTERING COMMAND CENTER AUTOMATICALLY</p>
+</div>
+    </section>
+<!-- MAIN DASHBOARD -->
+<section id="dashboard-screen" class="screen dashboard-screen hidden">
+
+    <header class="topbar">
+        <div class="brand">PVT<span>.</span></div>
+        <div class="topbar-label">TACTICAL OPERATIONS</div>
+        <div class="player-level">LEVEL <span>01</span></div>
+    </header>
+
+    <main class="dashboard-container">
+
+        <div class="section-heading">
+            <p class="eyebrow">WELCOME BACK, OPERATOR</p>
+            <h1>YOUR NEXT <span>MISSION</span></h1>
+            <p>Prepare your equipment. Choose your operator. Enter the battlefield.</p>
+        </div>
+
+        <section class="dashboard-hero panel">
+            <div class="hero-content">
+                <p class="eyebrow">OPERATION 001</p>
+                <h2>DEPLOYMENT<br>IS IMMINENT</h2>
+                <p>
+                    Assemble your loadout and prepare for tactical combat.
+                    Your next operation awaits.
+                </p>
+
+                <button id="start-game-button" class="primary-button">
+                    SELECT OPERATOR <span>→</span>
+                </button>
+            </div>
+
+            <div class="hero-visual">
+                <div class="operator-placeholder">
+                    <span>PVT</span>
+                    <small>OPERATOR PREVIEW</small>
+                </div>
+            </div>
+        </section>
+
+        <div class="upgrade-heading">
+            <h2>COMMAND CENTER</h2>
+            <span>SELECT A SECTION</span>
+        </div>
+
+        <section class="dashboard-grid">
+
+            <button class="dashboard-card panel" data-section="skins">
+                <span class="dashboard-number">01</span>
+                <h3>OPERATORS & SKINS</h3>
+                <p>Choose your operator and customize your appearance.</p>
+                <span class="card-action">EXPLORE →</span>
+            </button>
+
+            <button class="dashboard-card panel" data-section="loadout">
+                <span class="dashboard-number">02</span>
+                <h3>LOADOUT</h3>
+                <p>Select your weapons and tactical equipment.</p>
+                <span class="card-action">CUSTOMIZE →</span>
+            </button>
+
+            <button class="dashboard-card panel" data-section="upgrades">
+                <span class="dashboard-number">03</span>
+                <h3>UPGRADES</h3>
+                <p>Track your XP, progression, and unlocks.</p>
+                <span class="card-action">VIEW PROGRESS →</span>
+            </button>
+
+            <button class="dashboard-card panel" data-section="multiplayer">
+                <span class="dashboard-number">04</span>
+                <h3>MULTIPLAYER</h3>
+                <p>Create a room or join your friends using a code.</p>
+                <span class="card-action">FIND A MATCH →</span>
+            </button>
+
+            <button class="dashboard-card panel" data-section="missions">
+                <span class="dashboard-number">05</span>
+                <h3>MISSIONS</h3>
+                <p>Explore operations and mission objectives.</p>
+                <span class="card-action">VIEW MISSIONS →</span>
+            </button>
+
+            <button class="dashboard-card panel" data-section="settings">
+                <span class="dashboard-number">06</span>
+                <h3>SETTINGS</h3>
+                <p>Configure audio, controls, and gameplay preferences.</p>
+                <span class="card-action">CONFIGURE →</span>
+            </button>
+
+        </section>
+
+        <p id="dashboard-message" class="dashboard-message" role="status"></p>
+
+    </main>
+
+    <footer class="page-footer dashboard-footer">
+        <span>PVT // TACTICAL OPERATIONS</span>
+        <span>TRAIN • PREPARE • DEPLOY</span>
+    </footer>
+
+</section>
+
+<!-- OPERATOR SELECTION SCREEN -->
+<section id="operator-screen" class="screen hidden">
+    <header class="topbar">
+        <div class="brand">PVT<span>.</span></div>
+        <div class="topbar-label">OPERATOR SELECTION</div>
+        <button id="back-dashboard" class="secondary-button">
+            ← BACK
+        </button>
+    </header>
+
+    <main class="dashboard-container">
+        <div class="section-heading">
+            <p class="eyebrow">TACTICAL PERSONNEL</p>
+            <h1>CHOOSE YOUR <span>OPERATOR</span></h1>
+            <p>Select your operator. Unlock additional appearances as you progress.</p>
+        </div>
+
+        <div class="operator-layout">
+            <div class="operator-preview panel">
+                <div id="operator-figure" class="operator-figure">01</div>
+                <p class="eyebrow">SELECTED OPERATOR</p>
+                <h2 id="operator-name">VANGUARD</h2>
+                <p id="operator-description">A versatile combat specialist.</p>
+                <p class="operator-status">STATUS: <span id="operator-status">AVAILABLE</span></p>
+            </div>
+
+            <div class="operator-list">
+                <button class="operator-card selected" data-name="VANGUARD"
+                    data-number="01" data-cost="0" data-description="A versatile combat specialist.">
+                    <span class="operator-number">01</span>
+                    <span><strong>VANGUARD</strong><small>STANDARD ISSUE</small></span>
+                    <span class="operator-lock">OWNED</span>
+                </button>
+
+                <button class="operator-card" data-name="PHANTOM"
+                    data-number="02" data-cost="100" data-description="A specialist in covert operations.">
+                    <span class="operator-number">02</span>
+                    <span><strong>PHANTOM</strong><small>STEALTH SKIN</small></span>
+                    <span class="operator-lock">100 XP</span>
+                </button>
+
+                <button class="operator-card" data-name="REAPER"
+                    data-number="03" data-cost="250" data-description="A hardened frontline operator.">
+                    <span class="operator-number">03</span>
+                    <span><strong>REAPER</strong><small>ASSAULT SKIN</small></span>
+                    <span class="operator-lock">250 XP</span>
+                </button>
+
+                <button class="operator-card" data-name="SPECTRE"
+                    data-number="04" data-cost="500" data-description="An elite tactical appearance.">
+                    <span class="operator-number">04</span>
+                    <span><strong>SPECTRE</strong><small>ELITE SKIN</small></span>
+                    <span class="operator-lock">500 XP</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="operator-bottom panel">
+            <div>
+                <p class="eyebrow">AVAILABLE EXPERIENCE</p>
+                <h2><span id="operator-xp">150</span> XP</h2>
+            </div>
+            <button id="confirm-operator" class="primary-button">
+                CONFIRM OPERATOR →
+            </button>
+        </div>
+
+        <p id="operator-message" class="dashboard-message" role="status"></p>
+    </main>
+</section>
+
+
+<!-- EQUIPMENT SELECTION SCREEN -->
+<section id="equipment-screen" class="screen hidden">
+    <header class="topbar">
+        <div class="brand">PVT<span>.</span></div>
+        <div class="topbar-label">EQUIPMENT SELECTION</div>
+        <button id="back-operator" class="secondary-button">← BACK</button>
+    </header>
+
+    <main class="dashboard-container">
+        <div class="section-heading">
+            <p class="eyebrow">MISSION PREPARATION</p>
+            <h1>CHOOSE YOUR <span>LOADOUT</span></h1>
+            <p>Select your weapons and equipment before deployment.</p>
+        </div>
+
+        <div class="equipment-grid">
+            <div class="panel equipment-panel">
+                <p class="eyebrow">PRIMARY WEAPON</p>
+                <h2>Assault Rifle</h2>
+                <p>Balanced range, damage, and accuracy.</p>
+                <select id="primary-weapon" class="equipment-select">
+                    <option value="Assault Rifle">Assault Rifle</option>
+                    <option value="SMG">Submachine Gun (SMG)</option>
+                    <option value="Sniper Rifle">Sniper Rifle</option>
+                    <option value="Shotgun">Shotgun</option>
+                </select>
+            </div>
+
+            <div class="panel equipment-panel">
+                <p class="eyebrow">SECONDARY WEAPON</p>
+                <h2>Pistol</h2>
+                <p>A reliable backup when needed.</p>
+                <select id="secondary-weapon" class="equipment-select">
+                    <option value="Pistol">Pistol</option>
+                    <option value="Combat Knife">Combat Knife</option>
+                </select>
+            </div>
+
+            <div class="panel equipment-panel">
+                <p class="eyebrow">TACTICAL EQUIPMENT</p>
+                <h2>Field Kit</h2>
+                <p>Choose the equipment you will carry.</p>
+                <select id="tactical-equipment" class="equipment-select">
+                    <option value="Medkit">Medkit</option>
+                    <option value="Smoke Grenade">Smoke Grenade</option>
+                    <option value="Flashbang">Flashbang</option>
+                </select>
+            </div>
+        </div>
+
+        <p id="equipment-message" class="dashboard-message" role="status"></p>
+
+        <button id="continue-deployment" class="primary-button">
+            CONTINUE TO DEPLOYMENT →
+        </button>
+    </main>
+</section>
+
+<!-- DEPLOYMENT SCREEN -->
+<section id="deployment-screen" class="screen hidden">
+    <header class="topbar">
+        <div class="brand">PVT<span>.</span></div>
+        <div class="topbar-label">DEPLOYMENT BRIEFING</div>
+        <button id="back-equipment" class="secondary-button">← LOADOUT</button>
+    </header>
+
+    <main class="deployment-content">
+        <p class="eyebrow">OPERATION STATUS: READY</p>
+        <h1>PREPARE FOR <span>DEPLOYMENT</span></h1>
+
+        <div class="deployment-card panel">
+            <div class="deployment-figure" id="deployment-figure">01</div>
+            <p class="eyebrow">YOUR SELECTED OPERATOR</p>
+            <h2 id="deployment-operator">VANGUARD</h2>
+            <p id="deployment-loadout">Assault Rifle • Pistol • Medkit</p>
+            <p>Check your loadout, then enter the mission.</p>
+            <button id="begin-game" class="primary-button">
+                BEGIN GAME →
+            </button>
+        </div>
+    </main>
+</section>
+
+
+<!-- PVT 3D BATTLEFIELD -->
+<section id="gameplay-screen" class="screen hidden">
+    <div id="battlefield">
+        <div class="battle-top">
+            <div class="battle-brand">PVT<span>.</span> <small>LIVE OPERATION</small></div>
+            <div class="battle-stats">
+                <span>HEALTH <strong id="game-health">100</strong></span>
+                <span>ELIMINATIONS <strong id="game-kills">0</strong></span>
+                <span>ENEMIES <strong id="game-enemies">5</strong></span>
+            </div>
+        </div>
+        <div id="game-mount"></div>
+        <div class="battle-crosshair">+</div>
+        <div class="battle-instructions">
+            <strong>W A S D</strong> MOVE
+            <strong>MOUSE</strong> LOOK
+            <strong>CLICK</strong> FIRE
+            <strong>ESC</strong> RELEASE MOUSE
+        </div>
+        <div id="game-notice">MISSION ACTIVE — ELIMINATE HOSTILE FORCES</div>
+        <div id="game-over-panel" class="hidden">
+            <h1 id="game-over-title">MISSION COMPLETE</h1>
+            <p id="game-over-description"></p>
+            <button id="game-restart" class="primary-button">PLAY AGAIN</button>
+            <button id="game-dashboard" class="secondary-button">RETURN TO COMMAND</button>
+        </div>
+    </div>
+</section>
+
+
+    <script src="/js/main.js"></script>
+    <script type="module" src="/js/game.js"></script>
+</body>
+</html>

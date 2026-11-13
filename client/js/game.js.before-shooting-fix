@@ -1,0 +1,371 @@
+import * as THREE from "/vendor/three/build/three.module.js";
+
+const screen = document.getElementById("gameplay-screen");
+
+if (!screen) {
+    console.error("PVT: Gameplay screen is missing.");
+} else {
+    screen.innerHTML = `
+        <div id="battlefield" style="position:relative;width:100%;height:80vh;min-height:480px;background:#111;overflow:hidden;">
+            <div id="battle-hud" style="position:absolute;z-index:5;top:15px;left:15px;color:#fff;font-family:monospace;background:#111c;padding:15px;">
+                <strong>PVT // MISSION IN PROGRESS</strong>
+                <p>OPERATOR: <span id="battle-operator">VANGUARD</span></p>
+                <p>HEALTH: <span id="battle-health">100</span>%</p>
+                <p>AMMO: <span id="battle-ammo">30</span></p>
+                <p>ENEMIES: <span id="battle-enemies">5</span></p>
+            </div>
+            <div style="position:absolute;z-index:5;top:50%;left:50%;color:white;font-size:25px;transform:translate(-50%,-50%);pointer-events:none;">+</div>
+            <div style="position:absolute;z-index:5;bottom:12px;left:12px;color:white;font:12px monospace;background:#111c;padding:10px;">
+                WASD: MOVE | MOUSE: AIM | CLICK: SHOOT | SHIFT: RUN
+            </div>
+            <div id="battle-message" style="position:absolute;z-index:6;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;font:bold 22px monospace;display:none;"></div>
+            <canvas id="battlefield-canvas" style="display:block;width:100%;height:100%;"></canvas>
+        </div>`;
+
+    const canvas = document.getElementById("battlefield-canvas");
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x9babae);
+    scene.fog = new THREE.Fog(0x9babae, 55, 155);
+
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 250);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+
+    scene.add(new THREE.HemisphereLight(0xdce8ef, 0x454337, 2));
+
+    const sun = new THREE.DirectionalLight(0xffe3bd, 3);
+    sun.position.set(-35, 55, 25);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -70;
+    sun.shadow.camera.right = 70;
+    sun.shadow.camera.top = 70;
+    sun.shadow.camera.bottom = -70;
+    scene.add(sun);
+
+    // Uneven-looking earth base
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(220, 220, 40, 40),
+        new THREE.MeshStandardMaterial({
+            color: 0x77715b,
+            roughness: 1
+        })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Dust, stones and broken concrete scattered across the terrain
+    const stoneMaterials = [
+        new THREE.MeshStandardMaterial({ color: 0x625f55, roughness: 1 }),
+        new THREE.MeshStandardMaterial({ color: 0x898171, roughness: 1 }),
+        new THREE.MeshStandardMaterial({ color: 0x494a45, roughness: 1 })
+    ];
+
+    for (let i = 0; i < 170; i++) {
+        const size = 0.12 + Math.random() * 0.65;
+        const stone = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(size, 0),
+            stoneMaterials[i % stoneMaterials.length]
+        );
+        stone.position.set(
+            (Math.random() - 0.5) * 180,
+            size * 0.35,
+            (Math.random() - 0.5) * 180
+        );
+        stone.rotation.set(Math.random(), Math.random() * 3, Math.random());
+        stone.castShadow = true;
+        scene.add(stone);
+    }
+
+    // Ruined concrete structures with broken upper sections
+    const buildingMaterials = [
+        new THREE.MeshStandardMaterial({ color: 0x77746b, roughness: 0.95 }),
+        new THREE.MeshStandardMaterial({ color: 0x575b58, roughness: 0.95 }),
+        new THREE.MeshStandardMaterial({ color: 0x8b806e, roughness: 0.95 })
+    ];
+
+    for (let i = 0; i < 24; i++) {
+        const x = (Math.random() - 0.5) * 130;
+        const z = (Math.random() - 0.5) * 130;
+
+        if (Math.abs(x) < 10 && Math.abs(z) < 18) continue;
+
+        const width = 5 + Math.random() * 8;
+        const height = 4 + Math.random() * 9;
+        const depth = 5 + Math.random() * 8;
+        const material = buildingMaterials[i % buildingMaterials.length];
+
+        const building = new THREE.Mesh(
+            new THREE.BoxGeometry(width, height, depth),
+            material
+        );
+        building.position.set(x, height / 2, z);
+        building.rotation.y = Math.random() * 0.15;
+        building.castShadow = true;
+        building.receiveShadow = true;
+        scene.add(building);
+
+        // Broken roof slab or a collapsed concrete section
+        if (i % 2 === 0) {
+            const slab = new THREE.Mesh(
+                new THREE.BoxGeometry(width * 0.65, 0.45, depth * 0.7),
+                buildingMaterials[(i + 1) % buildingMaterials.length]
+            );
+            slab.position.set(
+                x + (Math.random() - 0.5) * 2,
+                height + 0.3,
+                z + (Math.random() - 0.5) * 2
+            );
+            slab.rotation.z = (Math.random() - 0.5) * 0.3;
+            slab.castShadow = true;
+            scene.add(slab);
+        }
+
+        // Dark openings suggest damaged windows
+        const windowMaterial = new THREE.MeshStandardMaterial({
+            color: 0x292f30,
+            roughness: 1
+        });
+
+        for (let w = 0; w < 2; w++) {
+            const opening = new THREE.Mesh(
+                new THREE.BoxGeometry(0.9, 1.25, 0.08),
+                windowMaterial
+            );
+            opening.position.set(
+                x + (w - 0.5) * width * 0.35,
+                Math.min(height - 1, 2.5 + Math.random() * 2),
+                z + depth / 2 + 0.045
+            );
+            scene.add(opening);
+        }
+    }
+
+    // Military sandbag barricades for cover
+    const sandbagMaterial = new THREE.MeshStandardMaterial({
+        color: 0x77745b,
+        roughness: 1
+    });
+
+    for (let i = 0; i < 10; i++) {
+        const x = (Math.random() - 0.5) * 100;
+        const z = (Math.random() - 0.5) * 100;
+
+        if (Math.abs(x) < 9 && Math.abs(z) < 15) continue;
+
+        for (let row = 0; row < 2; row++) {
+            for (let bag = 0; bag < 4; bag++) {
+                const mesh = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.25, 0.48, 0.65),
+                    sandbagMaterial
+                );
+                mesh.position.set(
+                    x + (bag - 1.5) * 1.12,
+                    0.24 + row * 0.43,
+                    z + (row % 2) * 0.2
+                );
+                mesh.rotation.y = (Math.random() - 0.5) * 0.12;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+            }
+        }
+    }
+
+    const player = new THREE.Group();
+    const body = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.45, 0.9, 4, 8),
+        new THREE.MeshStandardMaterial({ color: 0x283e31 })
+    );
+    body.position.y = 1;
+    body.castShadow = true;
+    player.add(body);
+    player.position.set(0, 0, 12);
+    scene.add(player);
+
+    const enemies = [];
+    const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x8d3026 });
+
+    for (let i = 0; i < 5; i++) {
+        const enemy = new THREE.Mesh(
+            new THREE.BoxGeometry(0.9, 1.8, 0.7),
+            enemyMaterial.clone()
+        );
+        enemy.position.set((i - 2) * 7, 0.9, -12 - Math.random() * 20);
+        enemy.castShadow = true;
+        enemy.userData.health = 100;
+        enemy.userData.lastShot = 0;
+        scene.add(enemy);
+        enemies.push(enemy);
+    }
+
+    const keys = {};
+    let health = 100;
+    let ammo = 30;
+    let yaw = 0;
+    let pitch = 0;
+    let gameOver = false;
+    const raycaster = new THREE.Raycaster();
+
+    window.addEventListener("keydown", e => {
+        keys[e.code] = true;
+        if (["KeyW", "KeyA", "KeyS", "KeyD", "Space"].includes(e.code)) {
+            e.preventDefault();
+        }
+    });
+
+    window.addEventListener("keyup", e => {
+        keys[e.code] = false;
+    });
+
+    canvas.addEventListener("click", () => {
+        if (gameOver) return;
+
+        if (document.pointerLockElement !== canvas) {
+            canvas.requestPointerLock?.();
+            return;
+        }
+
+        if (ammo <= 0) {
+            showMessage("OUT OF AMMO — RELOAD WITH R");
+            return;
+        }
+
+        ammo--;
+        document.getElementById("battle-ammo").textContent = ammo;
+
+        raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+        const hits = raycaster.intersectObjects(enemies.filter(e => e.userData.health > 0));
+
+        if (hits.length && hits[0].distance < 65) {
+            const enemy = hits[0].object;
+            enemy.userData.health -= 50;
+            enemy.material.color.set(0xffaa22);
+
+            if (enemy.userData.health <= 0) {
+                enemy.visible = false;
+                enemy.userData.health = 0;
+                document.getElementById("battle-enemies").textContent =
+                    enemies.filter(e => e.userData.health > 0).length;
+
+                if (enemies.every(e => e.userData.health <= 0)) {
+                    gameOver = true;
+                    showMessage("MISSION COMPLETE!");
+                    document.exitPointerLock?.();
+                }
+            } else {
+                setTimeout(() => {
+                    if (enemy.userData.health > 0) enemy.material.color.set(0x8d3026);
+                }, 150);
+            }
+        }
+    });
+
+    window.addEventListener("mousemove", e => {
+        if (document.pointerLockElement !== canvas || gameOver) return;
+        yaw -= e.movementX * 0.002;
+        pitch -= e.movementY * 0.002;
+        pitch = Math.max(-0.65, Math.min(0.65, pitch));
+    });
+
+    window.addEventListener("keydown", e => {
+        if (e.code === "KeyR") {
+            ammo = 30;
+            document.getElementById("battle-ammo").textContent = ammo;
+        }
+    });
+
+    function showMessage(message) {
+        const el = document.getElementById("battle-message");
+        el.textContent = message;
+        el.style.display = "block";
+    }
+
+    function resize() {
+        const w = Math.max(1, canvas.clientWidth);
+        const h = Math.max(1, canvas.clientHeight);
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    let lastTime = 0;
+
+    function animate(time) {
+        requestAnimationFrame(animate);
+        const delta = Math.min((time - lastTime) / 1000 || 0, 0.05);
+        lastTime = time;
+
+        if (!gameOver) {
+            const speed = (keys.ShiftLeft ? 10 : 6) * delta;
+            const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+            const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+
+            if (keys.KeyW) player.position.addScaledVector(forward, speed);
+            if (keys.KeyS) player.position.addScaledVector(forward, -speed);
+            if (keys.KeyD) player.position.addScaledVector(right, speed);
+            if (keys.KeyA) player.position.addScaledVector(right, -speed);
+
+            player.position.x = THREE.MathUtils.clamp(player.position.x, -75, 75);
+            player.position.z = THREE.MathUtils.clamp(player.position.z, -75, 75);
+
+            for (const enemy of enemies) {
+                if (enemy.userData.health <= 0) continue;
+
+                const distance = enemy.position.distanceTo(player.position);
+                if (distance < 12) {
+                    enemy.lookAt(player.position.x, enemy.position.y, player.position.z);
+
+                    if (distance > 3) {
+                        enemy.position.addScaledVector(
+                            new THREE.Vector3(
+                                player.position.x - enemy.position.x, 0,
+                                player.position.z - enemy.position.z
+                            ).normalize(),
+                            delta * 1.5
+                        );
+                    } else if (time - enemy.userData.lastShot > 1000) {
+                        enemy.userData.lastShot = time;
+                        health = Math.max(0, health - 10);
+                        document.getElementById("battle-health").textContent = health;
+
+                        if (health <= 0) {
+                            gameOver = true;
+                            showMessage("OPERATOR ELIMINATED");
+                            document.exitPointerLock?.();
+                        }
+                    }
+                }
+            }
+        }
+
+        const offset = new THREE.Vector3(
+            Math.sin(yaw) * 7,
+            4 + pitch * 3,
+            Math.cos(yaw) * 7
+        );
+        camera.position.copy(player.position).add(offset);
+        camera.lookAt(
+            player.position.x - Math.sin(yaw) * 5,
+            player.position.y + 1.5 + pitch * 5,
+            player.position.z - Math.cos(yaw) * 5
+        );
+
+        renderer.render(scene, camera);
+    }
+
+    document.getElementById("battle-operator").textContent =
+        localStorage.getItem("pvtSelectedOperator") || "VANGUARD";
+
+    requestAnimationFrame(animate);
+    console.log("PVT battlefield initialized.");
+}

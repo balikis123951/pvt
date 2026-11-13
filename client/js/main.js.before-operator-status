@@ -1,0 +1,298 @@
+// ========================================
+// PVT - SCREEN FLOW
+// ========================================
+
+const loadingScreen = document.getElementById("loading-screen");
+const upgradeScreen = document.getElementById("upgrade-screen");
+const dashboardScreen = document.getElementById("dashboard-screen");
+
+// Initial loading screen
+const loadingProgress = document.getElementById("loading-progress");
+const loadingPercentage = document.getElementById("loading-percentage");
+const loadingMessage = document.getElementById("loading-message");
+
+// Upgrade screen countdown
+const upgradeProgress = document.getElementById("upgrade-loading-progress");
+const upgradeCountdown = document.getElementById("upgrade-countdown");
+const upgradeMessage = document.getElementById("upgrade-loading-message");
+
+// Dashboard
+const startGameButton = document.getElementById("start-game-button");
+const dashboardMessage = document.getElementById("dashboard-message");
+
+const TOTAL_UPGRADE_TIME = 10_000;
+
+// ========================================
+// INITIAL LOADING SCREEN
+// ========================================
+
+function startLoading() {
+    let progress = 0;
+
+    const messages = [
+        { progress: 0, text: "INITIALIZING SYSTEMS" },
+        { progress: 25, text: "CHECKING GAME ASSETS" },
+        { progress: 50, text: "PREPARING OPERATIONS" },
+        { progress: 75, text: "INITIALIZING INTERFACE" },
+        { progress: 95, text: "FINALIZING SETUP" }
+    ];
+
+    const timer = setInterval(() => {
+        progress = Math.min(
+            100,
+            progress + Math.floor(Math.random() * 4) + 1
+        );
+
+        loadingProgress.style.width = `${progress}%`;
+        loadingPercentage.textContent = `${progress}%`;
+
+        const currentMessage = [...messages]
+            .reverse()
+            .find(message => progress >= message.progress);
+
+        if (currentMessage) {
+            loadingMessage.textContent = currentMessage.text;
+        }
+
+        if (progress >= 100) {
+            clearInterval(timer);
+
+            loadingMessage.textContent = "SYSTEM READY";
+
+            setTimeout(() => {
+                loadingScreen.classList.add("hidden");
+                upgradeScreen.classList.remove("hidden");
+
+                // Begin the 10-second upgrade screen countdown.
+                startUpgradeCountdown();
+            }, 500);
+        }
+    }, 80);
+}
+
+// ========================================
+// UPGRADE SCREEN - 10 SECONDS
+// ========================================
+
+function startUpgradeCountdown() {
+    const startTime = Date.now();
+    const endTime = startTime + TOTAL_UPGRADE_TIME;
+
+    upgradeProgress.style.width = "0%";
+    upgradeCountdown.textContent = "10";
+    upgradeMessage.textContent = "PREPARING YOUR OPERATION";
+
+    const timer = setInterval(() => {
+        const now = Date.now();
+        const elapsed = now - startTime;
+
+        const progress = Math.min(
+            100,
+            (elapsed / TOTAL_UPGRADE_TIME) * 100
+        );
+
+        const remaining = Math.max(0, endTime - now);
+        const secondsLeft = Math.ceil(remaining / 1000);
+
+        upgradeProgress.style.width = `${progress}%`;
+        upgradeCountdown.textContent = secondsLeft;
+
+        if (secondsLeft <= 5) {
+            upgradeMessage.textContent = "FINALIZING DEPLOYMENT";
+        }
+
+        if (remaining <= 0) {
+            clearInterval(timer);
+
+            upgradeProgress.style.width = "100%";
+            upgradeCountdown.textContent = "0";
+            upgradeMessage.textContent = "COMMAND CENTER READY";
+
+            setTimeout(() => {
+                openDashboard();
+            }, 300);
+        }
+    }, 50);
+}
+
+// ========================================
+// OPEN DASHBOARD
+// ========================================
+
+function openDashboard() {
+    upgradeScreen.classList.add("hidden");
+    dashboardScreen.classList.remove("hidden");
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+
+    console.log("PVT Command Center opened.");
+}
+
+// ========================================
+// DASHBOARD INTERACTIONS
+// ========================================
+
+// Open operator selection
+startGameButton.addEventListener("click", () => {
+    dashboardScreen.classList.add("hidden");
+    document.getElementById("operator-screen").classList.remove("hidden");
+});
+
+// Return to dashboard
+document.getElementById("back-dashboard").addEventListener("click", () => {
+    document.getElementById("operator-screen").classList.add("hidden");
+    dashboardScreen.classList.remove("hidden");
+});
+
+// Operator selection and unlocks
+let operatorXP = Number(localStorage.getItem("pvtXP")) || 150;
+let selectedOperator = "VANGUARD";
+
+document.querySelectorAll(".operator-card").forEach(card => {
+    card.addEventListener("click", () => {
+        const cost = Number(card.dataset.cost || 0);
+        const message = document.getElementById("operator-message");
+
+        if (cost > operatorXP) {
+            if (message) message.textContent = "Not enough XP to select this operator.";
+            return;
+        }
+
+        selectedOperator = card.dataset.name;
+
+        document.querySelectorAll(".operator-card").forEach(c =>
+            c.classList.remove("selected")
+        );
+        card.classList.add("selected");
+
+        document.getElementById("operator-name").textContent = selectedOperator;
+
+const previewImage = document.getElementById("operator-preview-image");
+const operatorImages = {
+    VANGUARD: "/assets/images/operators/vanguard.png",
+    PHANTOM: "/assets/images/operators/phantom.png",
+    REAPER: "/assets/images/operators/reaper.png",
+    SPECTRE: "/assets/images/operators/spectre.png"
+};
+
+previewImage.src = operatorImages[selectedOperator];
+previewImage.alt = selectedOperator + " operator";
+
+document.getElementById("operator-description").textContent =
+    card.dataset.description;
+
+        if (message) message.textContent = selectedOperator + " selected.";
+    });
+});
+
+document.getElementById("confirm-operator").addEventListener("click", () => {
+    document.getElementById("operator-screen").classList.add("hidden");
+    document.getElementById("equipment-screen").classList.remove("hidden");
+    window.scrollTo(0, 0);
+    console.log("PVT: Operator confirmed:", selectedOperator);
+});
+
+// START PVT
+// ========================================
+
+startLoading();
+
+// PVT EQUIPMENT AND DEPLOYMENT NAVIGATION
+
+document.getElementById("back-operator").addEventListener("click", () => {
+    document.getElementById("equipment-screen").classList.add("hidden");
+    document.getElementById("operator-screen").classList.remove("hidden");
+});
+
+document.getElementById("continue-deployment").addEventListener("click", () => {
+    const primary = document.getElementById("primary-weapon").value;
+    const secondary = document.getElementById("secondary-weapon").value;
+    const tactical = document.getElementById("tactical-equipment").value;
+
+    localStorage.setItem("pvtPrimaryWeapon", primary);
+    localStorage.setItem("pvtSecondaryWeapon", secondary);
+    localStorage.setItem("pvtTacticalEquipment", tactical);
+
+    document.getElementById("deployment-operator").textContent = selectedOperator;
+    document.getElementById("deployment-loadout").textContent =
+        `${primary} • ${secondary} • ${tactical}`;
+
+    document.getElementById("equipment-screen").classList.add("hidden");
+    document.getElementById("deployment-screen").classList.remove("hidden");
+
+    window.scrollTo(0, 0);
+});
+
+document.getElementById("back-equipment").addEventListener("click", () => {
+    document.getElementById("deployment-screen").classList.add("hidden");
+    document.getElementById("equipment-screen").classList.remove("hidden");
+});
+
+// PVT — BEGIN GAME
+const beginGameButton = document.getElementById("begin-game");
+
+if (beginGameButton) {
+    beginGameButton.addEventListener("click", () => {
+        const deploymentScreen =
+            document.getElementById("deployment-screen");
+
+        const gameplayScreen =
+            document.getElementById("gameplay-screen");
+
+        if (!deploymentScreen || !gameplayScreen) {
+            console.error(
+                "PVT: Could not find deployment or gameplay screen."
+            );
+            return;
+        }
+
+        // Save the selected operator and equipment.
+        const operator =
+            localStorage.getItem("pvtSelectedOperator") || "VANGUARD";
+
+        const primary =
+            localStorage.getItem("pvtPrimaryWeapon") || "RIFLE";
+
+        const secondary =
+            localStorage.getItem("pvtSecondaryWeapon") || "PISTOL";
+
+        const tactical =
+            localStorage.getItem("pvtTacticalEquipment") || "GRENADE";
+
+        // Update optional HUD elements if they exist.
+        const operatorDisplay =
+            document.getElementById("active-operator");
+
+        if (operatorDisplay) {
+            operatorDisplay.textContent = operator;
+        }
+
+        const loadoutDisplay =
+            document.getElementById("active-loadout");
+
+        if (loadoutDisplay) {
+            loadoutDisplay.textContent =
+                `${primary} • ${secondary} • ${tactical}`;
+        }
+
+        // Open the battlefield.
+        deploymentScreen.classList.add("hidden");
+        gameplayScreen.classList.remove("hidden");
+
+        // Give the 3D renderer time to resize after the screen opens.
+        requestAnimationFrame(() => {
+            window.dispatchEvent(new Event("resize"));
+        });
+
+        window.scrollTo(0, 0);
+
+        console.log("PVT: BEGIN GAME clicked successfully.");
+    });
+} else {
+    console.error("PVT: BEGIN GAME button was not found.");
+}
+
+

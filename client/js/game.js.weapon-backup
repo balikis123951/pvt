@@ -1,0 +1,279 @@
+import * as THREE from "/vendor/three/build/three.module.js";
+
+const screen = document.getElementById("gameplay-screen");
+
+if (!screen) {
+    console.error("PVT: Gameplay screen is missing.");
+} else {
+    screen.innerHTML = `
+        <div id="battlefield" style="position:relative;width:100%;height:80vh;min-height:480px;background:#111 url('/assets/images/battlefield.png') center center / cover no-repeat;overflow:hidden;">
+            <div id="battle-hud" style="position:absolute;z-index:5;top:15px;left:15px;color:#fff;font-family:monospace;background:#111c;padding:15px;">
+                <strong>PVT // MISSION IN PROGRESS</strong>
+                <p>OPERATOR: <span id="battle-operator">VANGUARD</span></p>
+                <p>HEALTH: <span id="battle-health">100</span>%</p>
+                <p>AMMO: <span id="battle-ammo">30</span></p>
+                <p>ENEMIES: <span id="battle-enemies">5</span></p>
+            </div>
+            <div style="position:absolute;z-index:5;top:50%;left:50%;color:white;font-size:25px;transform:translate(-50%,-50%);pointer-events:none;">+</div>
+            <div style="position:absolute;z-index:5;bottom:12px;left:12px;color:white;font:12px monospace;background:#111c;padding:10px;">
+                WASD: MOVE | MOUSE: AIM | CLICK: SHOOT | SHIFT: RUN
+            </div>
+            <div id="battle-message" style="position:absolute;z-index:6;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;font:bold 22px monospace;display:none;"></div>
+            <canvas id="battlefield-canvas" style="display:block;width:100%;height:100%;"></canvas>
+        </div>`;
+
+    const battlefield = document.getElementById("battlefield");
+    battlefield.style.backgroundImage = "url('/assets/images/battlefield.png')";
+    battlefield.style.backgroundSize = "cover";
+    battlefield.style.backgroundPosition = "center";
+    battlefield.style.backgroundRepeat = "no-repeat";
+
+    const canvas = document.getElementById("battlefield-canvas");
+    canvas.style.position = "absolute";
+    canvas.style.inset = "0";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.background = "transparent";
+    canvas.style.pointerEvents = "auto";
+    const scene = new THREE.Scene();
+    scene.background = null;
+    scene.fog = null;
+
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 250);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setClearColor(0x000000, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+
+    scene.add(new THREE.HemisphereLight(0xdce8ef, 0x454337, 2));
+
+    const sun = new THREE.DirectionalLight(0xffe3bd, 3);
+    sun.position.set(-35, 55, 25);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -70;
+    sun.shadow.camera.right = 70;
+    sun.shadow.camera.top = 70;
+    sun.shadow.camera.bottom = -70;
+    scene.add(sun);
+
+    const solidObstacles = [];
+
+    const player = new THREE.Group();
+    const body = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.45, 0.9, 4, 8),
+        new THREE.MeshStandardMaterial({ color: 0x283e31 })
+    );
+    body.position.y = 1;
+    body.castShadow = true;
+    player.add(body);
+    player.position.set(0, 0, 12);
+    scene.add(player);
+
+    const enemies = [];
+    const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x8d3026 });
+
+    for (let i = 0; i < 5; i++) {
+        const enemy = new THREE.Mesh(
+            new THREE.BoxGeometry(0.9, 1.8, 0.7),
+            enemyMaterial.clone()
+        );
+        enemy.position.set((i - 2) * 7, 0.9, -12 - Math.random() * 20);
+        enemy.castShadow = true;
+        enemy.userData.health = 100;
+        enemy.userData.lastShot = 0;
+        scene.add(enemy);
+        enemies.push(enemy);
+    }
+
+    const keys = {};
+    let health = 100;
+    let ammo = 30;
+    let yaw = 0;
+    let pitch = 0;
+    let gameOver = false;
+    const raycaster = new THREE.Raycaster();
+
+    function isBlocked(x, z) {
+        const radius = 0.9;
+
+        return solidObstacles.some(o => {
+            const angle = o.rotation || 0;
+            const cos = Math.abs(Math.cos(angle));
+            const sin = Math.abs(Math.sin(angle));
+
+            const extentX =
+                o.halfWidth * cos + o.halfDepth * sin;
+            const extentZ =
+                o.halfWidth * sin + o.halfDepth * cos;
+
+            return Math.abs(x - o.x) < extentX + radius &&
+                   Math.abs(z - o.z) < extentZ + radius;
+        });
+    }
+
+    window.addEventListener("keydown", e => {
+        keys[e.code] = true;
+        if (["KeyW", "KeyA", "KeyS", "KeyD", "Space"].includes(e.code)) {
+            e.preventDefault();
+        }
+    });
+
+    window.addEventListener("keyup", e => {
+        keys[e.code] = false;
+    });
+
+    canvas.addEventListener("click", () => {
+        if (gameOver) return;
+
+        if (document.pointerLockElement !== canvas) {
+            canvas.requestPointerLock?.();
+        }
+
+        if (ammo <= 0) {
+            showMessage("OUT OF AMMO — RELOAD WITH R");
+            return;
+        }
+
+        ammo--;
+        document.getElementById("battle-ammo").textContent = ammo;
+
+        raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+        const hits = raycaster.intersectObjects(enemies.filter(e => e.userData.health > 0));
+
+        if (hits.length && hits[0].distance < 65) {
+            const enemy = hits[0].object;
+            enemy.userData.health -= 50;
+            enemy.material.color.set(0xffaa22);
+
+            if (enemy.userData.health <= 0) {
+                enemy.visible = false;
+                enemy.userData.health = 0;
+                document.getElementById("battle-enemies").textContent =
+                    enemies.filter(e => e.userData.health > 0).length;
+
+                if (enemies.every(e => e.userData.health <= 0)) {
+                    gameOver = true;
+                    showMessage("MISSION COMPLETE!");
+                    document.exitPointerLock?.();
+                }
+            } else {
+                setTimeout(() => {
+                    if (enemy.userData.health > 0) enemy.material.color.set(0x8d3026);
+                }, 150);
+            }
+        }
+    });
+
+    window.addEventListener("mousemove", e => {
+        if (document.pointerLockElement !== canvas || gameOver) return;
+        yaw -= e.movementX * 0.002;
+        pitch -= e.movementY * 0.002;
+        pitch = Math.max(-0.65, Math.min(0.65, pitch));
+    });
+
+    window.addEventListener("keydown", e => {
+        if (e.code === "KeyR") {
+            ammo = 30;
+            document.getElementById("battle-ammo").textContent = ammo;
+        }
+    });
+
+    function showMessage(message) {
+        const el = document.getElementById("battle-message");
+        el.textContent = message;
+        el.style.display = "block";
+    }
+
+    function resize() {
+        const w = Math.max(1, canvas.clientWidth);
+        const h = Math.max(1, canvas.clientHeight);
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    let lastTime = 0;
+
+    function animate(time) {
+        requestAnimationFrame(animate);
+        const delta = Math.min((time - lastTime) / 1000 || 0, 0.05);
+        lastTime = time;
+
+        if (!gameOver) {
+            const speed = (keys.ShiftLeft ? 10 : 6) * delta;
+            const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+            const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+
+            let moveX = 0;
+            let moveZ = 0;
+
+            if (keys.KeyW) { moveX += forward.x * speed; moveZ += forward.z * speed; }
+            if (keys.KeyS) { moveX -= forward.x * speed; moveZ -= forward.z * speed; }
+            if (keys.KeyD) { moveX += right.x * speed; moveZ += right.z * speed; }
+            if (keys.KeyA) { moveX -= right.x * speed; moveZ -= right.z * speed; }
+
+            const nextX = player.position.x + moveX;
+            if (!isBlocked(nextX, player.position.z)) {
+                player.position.x = nextX;
+            }
+
+            const nextZ = player.position.z + moveZ;
+            if (!isBlocked(player.position.x, nextZ)) {
+                player.position.z = nextZ;
+            }
+
+            player.position.x = THREE.MathUtils.clamp(player.position.x, -75, 75);
+            player.position.z = THREE.MathUtils.clamp(player.position.z, -75, 75);
+
+            for (const enemy of enemies) {
+                if (enemy.userData.health <= 0) continue;
+
+                const distance = enemy.position.distanceTo(player.position);
+                if (distance < 12) {
+                    enemy.lookAt(player.position.x, enemy.position.y, player.position.z);
+
+                    if (distance > 3) {
+                        enemy.position.addScaledVector(
+                            new THREE.Vector3(
+                                player.position.x - enemy.position.x, 0,
+                                player.position.z - enemy.position.z
+                            ).normalize(),
+                            delta * 1.5
+                        );
+                    } else if (time - enemy.userData.lastShot > 1000) {
+                        enemy.userData.lastShot = time;
+                        // Temporary test: enemies cannot damage the player.
+                    }
+                }
+            }
+        }
+
+        const offset = new THREE.Vector3(
+            Math.sin(yaw) * 7,
+            4 + pitch * 3,
+            Math.cos(yaw) * 7
+        );
+        camera.position.copy(player.position).add(offset);
+        camera.lookAt(
+            player.position.x - Math.sin(yaw) * 5,
+            player.position.y + 1.5 + pitch * 5,
+            player.position.z - Math.cos(yaw) * 5
+        );
+
+        renderer.render(scene, camera);
+    }
+
+    document.getElementById("battle-operator").textContent =
+        localStorage.getItem("pvtSelectedOperator") || "VANGUARD";
+
+    requestAnimationFrame(animate);
+    console.log("PVT battlefield initialized.");
+}
