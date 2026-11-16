@@ -20,31 +20,6 @@ if (!screen) {
             </div>
             <div id="battle-message" style="position:absolute;z-index:6;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;font:bold 22px monospace;display:none;"></div>
             <canvas id="battlefield-canvas" style="display:block;width:100%;height:100%;"></canvas>
-            <div id="weapon-view" style="position:absolute;z-index:4;right:-2%;bottom:-5%;width:min(48%,520px);pointer-events:none;filter:drop-shadow(0 8px 8px #000b);">
-                <div id="muzzle-flash" style="position:absolute;left:-1%;top:49%;width:19%;height:25%;opacity:0;pointer-events:none;background:radial-gradient(ellipse at center,#ffffff 0%,#fff5a0 18%,#ff9b22 42%,#ff4500 60%,transparent 75%);filter:blur(2px);"></div>
-
-                <svg viewBox="0 0 520 300" width="100%" aria-label="Player weapon">
-                    <defs>
-                        <linearGradient id="gunMetal" x1="0" y1="0" x2="0.2" y2="1">
-                            <stop offset="0%" stop-color="#60666a"/>
-                            <stop offset="45%" stop-color="#252a2e"/>
-                            <stop offset="100%" stop-color="#101316"/>
-                        </linearGradient>
-                    </defs>
-                    <path d="M175 145 L345 145 L390 162 L485 174 L485 194 L388 190 L352 210 L285 210 L270 190 L220 190 L205 220 L165 220 L180 180 Z" fill="url(#gunMetal)" stroke="#111518" stroke-width="5"/>
-                    <path d="M290 145 L310 111 L355 111 L371 145 Z" fill="#252a2e" stroke="#111518" stroke-width="5"/>
-                    <path d="M310 111 L320 91 L348 91 L355 111 Z" fill="#111518"/>
-                    <path d="M185 151 L92 151 L75 166 L75 184 L185 184 Z" fill="#353b3e" stroke="#111518" stroke-width="5"/>
-                    <path d="M75 166 L18 166 L18 178 L75 178 Z" fill="#171b1e"/>
-                    <path d="M230 190 L260 190 L252 250 L225 250 Z" fill="#252a2e" stroke="#111518" stroke-width="5"/>
-                    <path d="M222 250 L255 250 L265 286 L238 286 Z" fill="#181c1f" stroke="#0d0f10" stroke-width="4"/>
-                    <path d="M170 145 L170 126 L225 126 L238 145" fill="#303639" stroke="#111518" stroke-width="5"/>
-                    <path d="M197 126 L197 116 L224 116 L224 126" fill="#15191c"/>
-                    <path d="M350 155 L385 160 L385 170 L350 167 Z" fill="#858b8e" opacity=".65"/>
-                    <path d="M105 157 L105 178 M125 157 L125 178 M145 157 L145 178" stroke="#101416" stroke-width="4"/>
-                    <path d="M285 150 L335 150" stroke="#858b8e" stroke-width="3" opacity=".6"/>
-                </svg>
-            </div>
         </div>`;
 
     const battlefield = document.getElementById("battlefield");
@@ -91,28 +66,65 @@ if (!screen) {
     const solidObstacles = [];
 
     const player = new THREE.Group();
-    const body = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.45, 0.9, 4, 8),
-        new THREE.MeshStandardMaterial({ color: 0x283e31 })
+    const soldierLoader = new THREE.TextureLoader();
+
+    const playerTexture = soldierLoader.load(
+        "/assets/images/soldiers/player-soldier.png"
     );
-    body.position.y = 1;
-    body.castShadow = true;
+    playerTexture.colorSpace = THREE.SRGBColorSpace;
+
+    const body = new THREE.Mesh(
+        new THREE.PlaneGeometry(1.8, 2.6),
+        new THREE.MeshBasicMaterial({
+            map: playerTexture,
+            transparent: true,
+            alphaTest: 0.05,
+            side: THREE.DoubleSide
+        })
+    );
+    body.position.y = 1.3;
     player.add(body);
     player.position.set(0, 0, 12);
     scene.add(player);
 
     const enemies = [];
-    const enemyMaterial = new THREE.MeshStandardMaterial({ color: 0x8d3026 });
 
     for (let i = 0; i < 5; i++) {
-        const enemy = new THREE.Mesh(
-            new THREE.BoxGeometry(0.9, 1.8, 0.7),
-            enemyMaterial.clone()
+        const enemyTexture = soldierLoader.load(
+            `/assets/images/soldiers/enemy-soldier-${(i % 4) + 1}.png`
         );
-        enemy.position.set((i - 2) * 7, 0.9, -12 - Math.random() * 20);
+        enemyTexture.colorSpace = THREE.SRGBColorSpace;
+
+        const enemy = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.7, 2.4),
+            new THREE.MeshBasicMaterial({
+                map: enemyTexture,
+                transparent: true,
+                alphaTest: 0.05,
+                side: THREE.DoubleSide
+            })
+        );
+        enemy.position.set((i - 2) * 9, 1.2, -25 - Math.random() * 20);
+
+        const groundShadow = new THREE.Mesh(
+            new THREE.CircleGeometry(0.62, 24),
+            new THREE.MeshBasicMaterial({
+                color: 0x111111,
+                transparent: true,
+                opacity: 0.32,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            })
+        );
+        groundShadow.rotation.x = -Math.PI / 2;
+        groundShadow.position.y = -1.17;
+        groundShadow.scale.set(1, 0.58, 1);
+        enemy.add(groundShadow);
         enemy.castShadow = true;
         enemy.userData.health = 100;
         enemy.userData.lastShot = 0;
+        enemy.userData.strafeDirection = i % 2 === 0 ? 1 : -1;
+        enemy.userData.nextStrafe = 0;
 
         const barGroup = new THREE.Group();
 
@@ -256,6 +268,12 @@ if (!screen) {
 
         ammo--;
         document.getElementById("battle-ammo").textContent = ammo;
+
+        for (const enemy of enemies) {
+            if (enemy.userData.health > 0) {
+                enemy.userData.alertedUntil = performance.now() + 12000;
+            }
+        }
 
         raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
         const hits = raycaster.intersectObjects(enemies.filter(e => e.userData.health > 0));
@@ -410,35 +428,76 @@ if (!screen) {
             for (const enemy of enemies) {
                 if (enemy.userData.health <= 0) continue;
 
+                if (!enemy.userData.patrolOrigin) {
+                    enemy.userData.patrolOrigin = enemy.position.clone();
+                    enemy.userData.patrolPhase = Math.random() * Math.PI * 2;
+                }
+
                 const distance = enemy.position.distanceTo(player.position);
-                if (distance < 60) {
-                    enemy.lookAt(player.position.x, enemy.position.y, player.position.z);
+                const alerted = time < (enemy.userData.alertedUntil || 0);
+                const detected = distance < 30 || alerted;
 
-                    if (distance > 5) {
-                        const direction = new THREE.Vector3(
-                            player.position.x - enemy.position.x,
-                            0,
-                            player.position.z - enemy.position.z
-                        ).normalize();
+                if (!detected) {
+                    enemy.userData.state = "PATROL";
 
-                        enemy.position.addScaledVector(direction, delta * 4.5);
+                    const phase = time * 0.00035 + enemy.userData.patrolPhase;
+                    const origin = enemy.userData.patrolOrigin;
+                    const targetX = origin.x + Math.cos(phase) * 4;
+                    const targetZ = origin.z + Math.sin(phase) * 4;
+
+                    enemy.position.x += (targetX - enemy.position.x) * delta * 0.5;
+                    enemy.position.z += (targetZ - enemy.position.z) * delta * 0.5;
+                    enemy.position.y = 1.2;
+                    continue;
+                }
+
+                enemy.userData.state = "ENGAGE";
+                enemy.lookAt(player.position.x, enemy.position.y, player.position.z);
+
+                if (distance > 8) {
+                    const direction = new THREE.Vector3(
+                        player.position.x - enemy.position.x,
+                        0,
+                        player.position.z - enemy.position.z
+                    ).normalize();
+
+                    enemy.position.addScaledVector(direction, delta * 3.5);
+
+                    if (time > enemy.userData.nextStrafe) {
+                        enemy.userData.strafeDirection *= -1;
+                        enemy.userData.nextStrafe = time + 1400 + Math.random() * 1200;
                     }
 
-                    if (distance <= 14 && time - enemy.userData.lastShot > 850) {
-                        enemy.userData.lastShot = time;
+                    const side = new THREE.Vector3(direction.z, 0, -direction.x);
+                    enemy.position.addScaledVector(
+                        side,
+                        enemy.userData.strafeDirection * delta * 1.0
+                    );
 
-                        health = Math.max(0, health - 10);
+                    if (isBlocked(enemy.position.x, enemy.position.z)) {
+                        enemy.position.addScaledVector(
+                            side, -enemy.userData.strafeDirection * delta * 2
+                        );
+                    }
+                }
 
-                        const healthDisplay = document.getElementById("battle-health");
-                        if (healthDisplay) healthDisplay.textContent = health;
+                enemy.position.x = THREE.MathUtils.clamp(enemy.position.x, -75, 75);
+                enemy.position.z = THREE.MathUtils.clamp(enemy.position.z, -75, 75);
+                enemy.position.y = 1.2;
 
-                        showMessage("UNDER FIRE! -10 HEALTH");
+                if (distance <= 14 && time - enemy.userData.lastShot > 1000) {
+                    enemy.userData.lastShot = time;
+                    health = Math.max(0, health - 10);
 
-                        if (health <= 0) {
-                            gameOver = true;
-                            showMessage("OPERATOR ELIMINATED — REFRESH TO RETRY");
-                            document.exitPointerLock?.();
-                        }
+                    const healthDisplay = document.getElementById("battle-health");
+                    if (healthDisplay) healthDisplay.textContent = health;
+
+                    showMessage("UNDER FIRE! -10 HEALTH");
+
+                    if (health <= 0) {
+                        gameOver = true;
+                        showMessage("OPERATOR ELIMINATED");
+                        document.exitPointerLock?.();
                     }
                 }
             }
@@ -447,20 +506,22 @@ if (!screen) {
         camera.fov = isAiming ? 48 : 75;
         camera.updateProjectionMatrix();
 
-        const cameraDistance = isAiming ? 3.8 : 7;
-        const cameraHeight = isAiming ? 2.7 :
-            (isCrouching ? crouchCameraHeight : normalCameraHeight);
+        const cameraDistance = isAiming ? 2.8 : 4.8;
+        const cameraHeight = isAiming ? 2.25 :
+            (isCrouching ? 1.9 : 3.1);
+
+        body.rotation.y = yaw + Math.PI;
 
         const offset = new THREE.Vector3(
             Math.sin(yaw) * cameraDistance,
-            cameraHeight + pitch * 3,
+            cameraHeight + pitch * 2,
             Math.cos(yaw) * cameraDistance
         );
         camera.position.copy(player.position).add(offset);
         camera.lookAt(
-            player.position.x - Math.sin(yaw) * 5,
-            player.position.y + 1.5 + pitch * 5,
-            player.position.z - Math.cos(yaw) * 5
+            player.position.x - Math.sin(yaw) * 2.5,
+            player.position.y + 1.35 + pitch * 3,
+            player.position.z - Math.cos(yaw) * 2.5
         );
 
         for (const enemy of enemies) {
