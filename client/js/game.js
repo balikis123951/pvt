@@ -20,6 +20,77 @@ if (!screen) {
             </div>
             <div id="battle-message" style="position:absolute;z-index:6;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;font:bold 22px monospace;display:none;"></div>
             <canvas id="battlefield-canvas" style="display:block;width:100%;height:100%;"></canvas>
+            <div id="weapon-view" style="position:absolute;z-index:8;left:50%;right:auto;bottom:-3%;width:min(68%,680px);transform:translateX(-50%);pointer-events:none;filter:drop-shadow(0 8px 8px #000b);">
+    <div id="muzzle-flash" style="position:absolute;left:47%;top:25%;width:12%;height:18%;opacity:0;pointer-events:none;background:radial-gradient(ellipse,#fff 0%,#fff4a0 25%,#ff9622 50%,transparent 75%);"></div>
+    <svg viewBox="0 0 520 400" width="100%" aria-label="First-person rifle and gloved arms">
+        <defs>
+            <linearGradient id="pvtSleeve" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#66664b"/>
+                <stop offset="55%" stop-color="#34392c"/>
+                <stop offset="100%" stop-color="#1b211b"/>
+            </linearGradient>
+            <linearGradient id="pvtRifle" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#64696a"/>
+                <stop offset="45%" stop-color="#292e30"/>
+                <stop offset="100%" stop-color="#101315"/>
+            </linearGradient>
+        </defs>
+
+        <!-- Sleeves and forearms -->
+        <path d="M20 400 L45 310 L135 250 L195 285 L165 400 Z"
+              fill="url(#pvtSleeve)" stroke="#171b17" stroke-width="8"/>
+        <path d="M500 400 L475 310 L385 250 L325 285 L355 400 Z"
+              fill="url(#pvtSleeve)" stroke="#171b17" stroke-width="8"/>
+
+        <!-- Left gloved hand -->
+        <path d="M115 260 L150 226 L190 235 L220 267 L205 295
+                 L175 291 L154 280 L132 294 L105 282 Z"
+              fill="#242923" stroke="#101410" stroke-width="7"/>
+        <path d="M139 259 L168 246 M151 272 L181 260"
+              stroke="#777966" stroke-width="6" stroke-linecap="round"/>
+
+        <!-- Right gloved hand -->
+        <path d="M405 260 L370 226 L330 235 L300 267 L315 295
+                 L345 291 L366 280 L388 294 L415 282 Z"
+              fill="#242923" stroke="#101410" stroke-width="7"/>
+        <path d="M381 259 L352 246 M369 272 L339 260"
+              stroke="#777966" stroke-width="6" stroke-linecap="round"/>
+
+        <!-- Rifle stock -->
+        <path d="M222 240 L298 240 L315 302 L300 365
+                 L279 390 L241 390 L220 365 L205 302 Z"
+              fill="#272b2c" stroke="#0c0f10" stroke-width="9"/>
+
+        <!-- Main receiver -->
+        <path d="M218 172 L302 172 L311 256 L295 300
+                 L225 300 L209 256 Z"
+              fill="url(#pvtRifle)" stroke="#0b0d0e" stroke-width="9"/>
+
+        <!-- Rifle barrel pointing into the battlefield -->
+        <path d="M239 178 L239 75 L250 43 L270 43
+                 L281 75 L281 178 Z"
+              fill="#252a2c" stroke="#0b0d0e" stroke-width="7"/>
+        <path d="M248 82 L272 82 M249 108 L271 108"
+              stroke="#727879" stroke-width="4"/>
+        <path d="M245 45 L245 28 L275 28 L275 45 Z"
+              fill="#101314" stroke="#090b0c" stroke-width="5"/>
+
+        <!-- Sight -->
+        <path d="M243 168 L243 145 L253 135 L267 135 L277 145 L277 168 Z"
+              fill="#171b1c" stroke="#090b0c" stroke-width="5"/>
+        <rect x="254" y="142" width="12" height="14" rx="2" fill="#6d7777"/>
+
+        <!-- Magazine and details -->
+        <path d="M231 272 L289 272 L281 340 L270 353 L250 353 L239 340 Z"
+              fill="#171b1d" stroke="#090b0c" stroke-width="6"/>
+        <path d="M239 289 L281 289 M240 302 L280 302 M242 315 L278 315"
+              stroke="#555b5d" stroke-width="4"/>
+        <path d="M219 202 L301 202 M219 214 L301 214"
+              stroke="#74797a" stroke-width="3" opacity=".65"/>
+        <path d="M224 235 L240 235 M280 235 L296 235"
+              stroke="#090b0c" stroke-width="6"/>
+    </svg>
+</div>
         </div>`;
 
     const battlefield = document.getElementById("battlefield");
@@ -85,7 +156,29 @@ if (!screen) {
     body.position.y = 1.3;
     player.add(body);
     player.position.set(0, 0, 12);
+    player.visible = false;
     scene.add(player);
+
+    // Visible soldier models for other connected PVT players.
+    const remotePlayers = new Map();
+
+    function createRemotePlayer(id) {
+        const remote = new THREE.Group();
+        const soldier = new THREE.Mesh(
+            new THREE.PlaneGeometry(1.8, 2.6),
+            new THREE.MeshBasicMaterial({
+                map: playerTexture,
+                transparent: true,
+                alphaTest: 0.05,
+                side: THREE.DoubleSide
+            })
+        );
+        remote.add(soldier);
+        remote.userData.playerId = id;
+        scene.add(remote);
+        remotePlayers.set(id, remote);
+        return remote;
+    }
 
     const enemies = [];
 
@@ -152,12 +245,75 @@ if (!screen) {
     }
 
     const keys = {};
+    const multiplayerSocket =
+        typeof window.io === "function" ? window.io() : null;
+    let multiplayerPlayers = [];
+    let lastNetworkUpdate = 0;
     let health = 100;
     let ammo = 30;
     let yaw = 0;
     let pitch = 0;
     let gameStarted = false;
     let gameOver = false;
+
+    if (multiplayerSocket) {
+        multiplayerSocket.on("players:update", (players) => {
+            if (!Array.isArray(players)) return;
+
+            multiplayerPlayers = players;
+            const connectedIds = new Set();
+
+            for (const other of players) {
+                if (!other || typeof other.id !== "string") continue;
+                if (other.id === multiplayerSocket.id) continue;
+                if (!Number.isFinite(other.x) || !Number.isFinite(other.z)) continue;
+
+                connectedIds.add(other.id);
+                const remote = remotePlayers.get(other.id)
+                    || createRemotePlayer(other.id);
+
+                remote.position.set(
+                    other.x,
+                    Number.isFinite(other.y) ? other.y : 0,
+                    other.z
+                );
+                remote.visible = true;
+            }
+
+            for (const [id, remote] of remotePlayers) {
+                if (!connectedIds.has(id)) {
+                    scene.remove(remote);
+                    remote.traverse((object) => {
+                        if (object.geometry) object.geometry.dispose();
+                        if (object.material) object.material.dispose();
+                    });
+                    remotePlayers.delete(id);
+                }
+            }
+        });
+
+        multiplayerSocket.on("player:damaged", (data) => {
+            if (!gameStarted || gameOver || !data) return;
+
+            const damage = Math.max(
+                0, Math.min(10, Number(data.amount) || 0)
+            );
+            health = Math.max(0, health - damage);
+
+            const healthDisplay = document.getElementById("battle-health");
+            if (healthDisplay) healthDisplay.textContent = health;
+
+            showMessage("ENEMY FIRE! -" + damage + " HEALTH");
+
+            if (health <= 0) {
+                gameOver = true;
+                showMessage("OPERATOR ELIMINATED");
+                document.exitPointerLock?.();
+            }
+        });
+    } else {
+        console.warn("PVT: Socket.IO client script is unavailable.");
+    }
 
     window.addEventListener("pvt:start-game", () => {
         gameStarted = true;
@@ -235,6 +391,66 @@ if (!screen) {
         keys[e.code] = false;
     });
 
+
+    // PVT procedural gunfire audio; no external audio files required.
+    let pvtAudioContext = null;
+
+    function playGunfire(enemyShot = false) {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+
+            if (!pvtAudioContext) pvtAudioContext = new AudioCtx();
+            const ctx = pvtAudioContext;
+            if (ctx.state === "suspended") ctx.resume();
+
+            const now = ctx.currentTime;
+
+            // Sharp gunshot crack.
+            const length = Math.floor(ctx.sampleRate * 0.16);
+            const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < length; i++) {
+                data[i] = (Math.random() * 2 - 1) *
+                    Math.pow(1 - i / length, enemyShot ? 5 : 7);
+            }
+
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(enemyShot ? 1500 : 2600, now);
+            filter.frequency.exponentialRampToValueAtTime(180, now + 0.13);
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(enemyShot ? 0.22 : 0.38, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            noise.start(now);
+            noise.stop(now + 0.16);
+
+            // Low-frequency body of the shot.
+            const boom = ctx.createOscillator();
+            const boomGain = ctx.createGain();
+            boom.type = "sine";
+            boom.frequency.setValueAtTime(enemyShot ? 100 : 130, now);
+            boom.frequency.exponentialRampToValueAtTime(35, now + 0.12);
+            boomGain.gain.setValueAtTime(enemyShot ? 0.22 : 0.3, now);
+            boomGain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+            boom.connect(boomGain);
+            boomGain.connect(ctx.destination);
+            boom.start(now);
+            boom.stop(now + 0.14);
+        } catch (error) {
+            console.warn("PVT audio unavailable:", error);
+        }
+    }
+
     canvas.addEventListener("click", () => {
         if (gameOver) return;
 
@@ -266,6 +482,7 @@ if (!screen) {
             return;
         }
 
+        playGunfire(false);
         ammo--;
         document.getElementById("battle-ammo").textContent = ammo;
 
@@ -425,6 +642,18 @@ if (!screen) {
             player.position.x = THREE.MathUtils.clamp(player.position.x, -75, 75);
             player.position.z = THREE.MathUtils.clamp(player.position.z, -75, 75);
 
+            // Share this operator's position with connected players.
+            if (multiplayerSocket && time - lastNetworkUpdate >= 100) {
+                lastNetworkUpdate = time;
+                multiplayerSocket.emit("player:update", {
+                    x: player.position.x,
+                    y: player.position.y,
+                    z: player.position.z,
+                    health,
+                    operator: localStorage.getItem("pvtSelectedOperator") || "VANGUARD"
+                });
+            }
+
             for (const enemy of enemies) {
                 if (enemy.userData.health <= 0) continue;
 
@@ -433,7 +662,37 @@ if (!screen) {
                     enemy.userData.patrolPhase = Math.random() * Math.PI * 2;
                 }
 
-                const distance = enemy.position.distanceTo(player.position);
+                // Select the closest known connected operator.
+                let target = {
+                    id: multiplayerSocket ? multiplayerSocket.id : "local",
+                    position: player.position,
+                    local: true
+                };
+                let distance = enemy.position.distanceTo(player.position);
+
+                if (multiplayerSocket) {
+                    for (const other of multiplayerPlayers) {
+                        if (!other || other.id === multiplayerSocket.id) continue;
+                        if (!Number.isFinite(other.x) || !Number.isFinite(other.z)) continue;
+
+                        const remotePosition = new THREE.Vector3(
+                            other.x, Number(other.y) || 0, other.z
+                        );
+                        const remoteDistance =
+                            enemy.position.distanceTo(remotePosition);
+
+                        if (remoteDistance < distance) {
+                            distance = remoteDistance;
+                            target = {
+                                id: other.id,
+                                position: remotePosition,
+                                local: false
+                            };
+                        }
+                    }
+                }
+
+                const targetPosition = target.position;
                 const alerted = time < (enemy.userData.alertedUntil || 0);
                 const detected = distance < 30 || alerted;
 
@@ -452,13 +711,13 @@ if (!screen) {
                 }
 
                 enemy.userData.state = "ENGAGE";
-                enemy.lookAt(player.position.x, enemy.position.y, player.position.z);
+                enemy.lookAt(targetPosition.x, enemy.position.y, targetPosition.z);
 
                 if (distance > 8) {
                     const direction = new THREE.Vector3(
-                        player.position.x - enemy.position.x,
+                        targetPosition.x - enemy.position.x,
                         0,
-                        player.position.z - enemy.position.z
+                        targetPosition.z - enemy.position.z
                     ).normalize();
 
                     enemy.position.addScaledVector(direction, delta * 3.5);
@@ -487,17 +746,29 @@ if (!screen) {
 
                 if (distance <= 14 && time - enemy.userData.lastShot > 1000) {
                     enemy.userData.lastShot = time;
-                    health = Math.max(0, health - 10);
+                    playGunfire(true);
 
-                    const healthDisplay = document.getElementById("battle-health");
-                    if (healthDisplay) healthDisplay.textContent = health;
+                    if (target.local) {
+                        health = Math.max(0, health - 10);
 
-                    showMessage("UNDER FIRE! -10 HEALTH");
+                        const healthDisplay =
+                            document.getElementById("battle-health");
+                        if (healthDisplay) {
+                            healthDisplay.textContent = health;
+                        }
 
-                    if (health <= 0) {
-                        gameOver = true;
-                        showMessage("OPERATOR ELIMINATED");
-                        document.exitPointerLock?.();
+                        showMessage("UNDER FIRE! -10 HEALTH");
+
+                        if (health <= 0) {
+                            gameOver = true;
+                            showMessage("OPERATOR ELIMINATED");
+                            document.exitPointerLock?.();
+                        }
+                    } else if (multiplayerSocket) {
+                        multiplayerSocket.emit("player:damage", {
+                            id: target.id,
+                            amount: 10
+                        });
                     }
                 }
             }
@@ -506,28 +777,35 @@ if (!screen) {
         camera.fov = isAiming ? 48 : 75;
         camera.updateProjectionMatrix();
 
-        const cameraDistance = isAiming ? 2.8 : 4.8;
-        const cameraHeight = isAiming ? 2.25 :
-            (isCrouching ? 1.9 : 3.1);
-
-        body.rotation.y = yaw + Math.PI;
-
-        const offset = new THREE.Vector3(
-            Math.sin(yaw) * cameraDistance,
-            cameraHeight + pitch * 2,
-            Math.cos(yaw) * cameraDistance
+        // First-person view: camera at the operator's eye level.
+        const eyeHeight = isCrouching ? 1.0 : 1.65;
+        camera.position.set(
+            player.position.x,
+            player.position.y + eyeHeight,
+            player.position.z
         );
-        camera.position.copy(player.position).add(offset);
+
+        const lookDirection = new THREE.Vector3(
+            -Math.sin(yaw) * Math.cos(pitch),
+            Math.sin(pitch),
+            -Math.cos(yaw) * Math.cos(pitch)
+        );
+
         camera.lookAt(
-            player.position.x - Math.sin(yaw) * 2.5,
-            player.position.y + 1.35 + pitch * 3,
-            player.position.z - Math.cos(yaw) * 2.5
+            camera.position.x + lookDirection.x * 30,
+            camera.position.y + lookDirection.y * 30,
+            camera.position.z + lookDirection.z * 30
         );
 
         for (const enemy of enemies) {
             if (enemy.userData.healthBarGroup && enemy.userData.health > 0) {
                 enemy.userData.healthBarGroup.quaternion.copy(camera.quaternion);
             }
+        }
+
+        // Turn remote soldier sprites toward this player's camera.
+        for (const remote of remotePlayers.values()) {
+            remote.lookAt(camera.position.x, remote.position.y, camera.position.z);
         }
 
         renderer.render(scene, camera);
